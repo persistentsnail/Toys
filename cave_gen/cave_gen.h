@@ -190,7 +190,7 @@ public:
 		}
 		cout << endl;
 	}
-	vector<vector<uint8>> get_map () { return _cave_map;}
+	vector<vector<uint8>> &get_map () { return _cave_map;}
 };
 
 #endif

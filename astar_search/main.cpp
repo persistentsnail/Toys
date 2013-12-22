@@ -71,7 +71,7 @@ public:
 		int icur = _sz++;
 
 		move_top(icur);
-		ensure();
+	//	ensure();
 	}
 
 	void pop(OpenedNode &ret) {
@@ -81,7 +81,7 @@ public:
 		_heap[0] = _heap[--_sz];
 		if (_sz > 0)
 			move_bottom(0);
-		ensure();
+//		ensure();
 	}
 
 	bool Get(int x, int y, OpenedNode &ret) {
@@ -91,7 +91,7 @@ public:
 		}
 		return false;
 	}
-
+	
 	bool make_smaller(int x, int y, int f, int g, int parent) {
 		int icur = _set[TI(x,y)];
 		assert(_heap[icur]._x == x && _heap[icur]._y == y);
@@ -108,8 +108,8 @@ public:
 		}else {
 			move_bottom(icur);
 		}
-	
-		ensure();
+
+		//ensure();
 		return true;
 	}
 
@@ -137,8 +137,11 @@ struct AStarSearcher {
 		return false;
 	}
 	template<size_t W, size_t H>
-	static void Search(int xstart, int ystart, int xend, int yend, vector<vector<uint8>> map) {
+	static void Search(int xstart, int ystart, int xend, int yend, vector<vector<uint8>> &map) {
+		// closed set
 		vector<int> closed(W*H,-1);
+		vector<int> g_closed(W*H);
+		//opened set
 		OpenedHeap<W,H> heap;
 
 		int f = 0 + heuristic_cost_estimate(xstart, ystart, xend, yend);
@@ -148,7 +151,11 @@ struct AStarSearcher {
 			OpenedNode smallest;
 			heap.pop(smallest);
 
+			// put into closed set
 			closed[TI(smallest._x,smallest._y)] = smallest._parent;
+			g_closed[TI(smallest._x, smallest._y)] = smallest._f;
+
+			// reach goal
 			if (smallest._x == xend && smallest._y == yend) break;
 
 			// Move
@@ -157,16 +164,21 @@ struct AStarSearcher {
 					if (!(i || j)) continue;
 					int ni = i+smallest._x;
 					int nj = j+smallest._y;
+
 					if (!(ni >= 0 && ni < W && nj >=0 && nj < H && map[ni][nj] != WALL)) continue;
+					if (smallest._parent == TI(ni,nj)) continue;
+					
 					int g = i && j ? smallest._g + 14:smallest._g + 10;
 					int f = g + heuristic_cost_estimate(ni,nj,xend,yend);
 					OpenedNode exist;
 					if (!heap.Get(ni,nj,exist)) {
+					
+						if (closed[TI(ni,nj)] != -1 && g_closed[TI(ni,nj)] <= f) continue;
+						
 						exist = OpenedNode(f,g,ni,nj,TI(smallest._x,smallest._y));
 						heap.push(exist);
-					}else if (exist._g > g) {
+					}else if (exist._f > f) {
 						heap.make_smaller(ni,nj,f,g,TI(smallest._x,smallest._y));
-						if (closed[TI(ni,nj)] >= 0) closed[TI(ni,nj)] = -1;
 					}
 				}
 		}
@@ -180,8 +192,8 @@ struct AStarSearcher {
 };
 
 int main(int argc, char *argv[]) {
-	const int W = 5;
-	const int H = 5;
+	const int W = 35;
+	const int H = 100;
 	CaveMapGenerator cmg(W,H);
 	cmg.generation(0.4, 4, 5);
 	cmg.dump();
